@@ -1,12 +1,10 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "latent-space-firewall")))
+ 
 import streamlit as st
 import plotly.graph_objects as go
 import time
 import json
 from transformer_lens import HookedTransformer
-from latent-space-firewall.src.firewall_engine import FirewallEngine
+from latent_space_firewall.src.firewall_engine import FirewallEngine
 
 # 1. CONFIGURATION & PAGE SETUP
 st.set_page_config(
