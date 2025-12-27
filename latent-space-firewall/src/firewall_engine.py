@@ -12,6 +12,18 @@ from . import config
 
 
 class FirewallEngine:
+        def scan(self, prompt: str) -> dict:
+            """
+            Analyze the prompt and return a dummy result for demonstration.
+            """
+            harm_score = 0.2  # Placeholder: replace with real logic
+            threshold = self.threshold
+            is_blocked = harm_score > threshold
+            return {
+                "harm_score": harm_score,
+                "threshold": threshold,
+                "is_blocked": is_blocked
+            }
     """
     Core engine for monitoring and intervening on model activations.
     """
