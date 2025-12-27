@@ -12,19 +12,18 @@ Latent Space Firewall is a research project exploring activation-based intervent
 ## Project Structure
 
 ```
-latent-space-firewall/
-├── app.py                  # Streamlit dashboard entry point
+latent_space_firewall/
 ├── data/
-│   ├── raw/               # Initial JSON prompts
-│   └── processed/         # Saved activations/tensors
+│   ├── raw/                  # Where your initial JSON prompts will live
+│   └── processed/            # Where your activations.npz (tensors) will live
 ├── notebooks/
-│   └── 01_activation_harvesting.ipynb  # Exploratory analysis
-├── requirements.txt       # Python dependencies
+│   └── 01_activation_harvesting.ipynb  # For Day 2 exploratory analysis
+├── requirements.txt
 ├── src/
 │   ├── __init__.py
-│   ├── config.py          # Global constants (layers, thresholds)
-│   ├── data_loader.py     # Prompt generation and dataset builder
-│   └── firewall_engine.py # Core firewall logic
+│   ├── config.py             # Global constants (Layer numbers, Thresholds)
+│   ├── data_loader.py        # Script to generate/load prompts
+│   └── firewall_engine.py    # The core intervention logic (Phase 2)
 └── README.md
 ```
 
@@ -33,7 +32,7 @@ latent-space-firewall/
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/LEDazzio01/Latent-Space-Firewall.git
-   cd Latent-Space-Firewall/latent-space-firewall
+   cd Latent-Space-Firewall
    ```
 
 2. **Create a virtual environment:**
@@ -52,13 +51,13 @@ latent-space-firewall/
 ### Run the Streamlit Firewall App
 
 ```bash
-streamlit run app.py
+PYTHONPATH=$PWD streamlit run latent_space_firewall/src/app.py
 ```
 
 ### Generate Sample Prompts
 
 ```bash
-python -m src.data_loader
+python -m latent_space_firewall.src.data_loader
 ```
 
 ### Activation Analysis Notebook
