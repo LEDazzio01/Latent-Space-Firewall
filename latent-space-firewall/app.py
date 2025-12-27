@@ -24,7 +24,7 @@ def load_system():
     with st.spinner("Loading Neural Weights & Firewall Rules..."):
         # We use CPU to be safe in Codespaces
         model = HookedTransformer.from_pretrained("gpt2-small", device="cpu")
-        engine = FirewallEngine(model, layer=6)
+        engine = FirewallEngine(target_layers=[6])
     return engine
 
 try:
