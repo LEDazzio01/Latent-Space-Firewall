@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import time
 import json
 from transformer_lens import HookedTransformer
-from src.firewall_engine import FirewallEngine
+from latent_space_firewall.src.firewall_engine import FirewallEngine
 
 # 1. CONFIGURATION & PAGE SETUP
 st.set_page_config(
