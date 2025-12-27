@@ -1,0 +1,9 @@
+torch>=2.1.0
+numpy
+pandas
+transformer_lens          # Critical for Layer 16 Hooking [cite: 69]
+accelerate                # For efficient model loading
+scikit-learn              # For the Linear Probe (Logistic Regression) [cite: 74]
+mapie                     # Industry standard for Conformal Prediction
+streamlit                 # For the dashboard (Phase 3) [cite: 36]
+plotly                    # For visualization
