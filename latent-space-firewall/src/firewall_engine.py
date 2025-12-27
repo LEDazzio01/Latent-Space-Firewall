@@ -14,9 +14,17 @@ from . import config
 class FirewallEngine:
     def scan(self, prompt: str) -> dict:
         """
-        Analyze the prompt and return a dummy result for demonstration.
+        Analyze the prompt for adversarial intent using keyword-based detection.
         """
-        harm_score = 0.2  # Placeholder: replace with real logic
+        adversarial_keywords = [
+            "delete", "ignore", "shutdown", "destroy", "bypass", "disable", "remove", "format", "drop", "kill", "overwrite", "corrupt", "steal", "exfiltrate", "leak", "exploit"
+        ]
+        prompt_lower = prompt.lower()
+        harm_score = 0.2
+        for keyword in adversarial_keywords:
+            if keyword in prompt_lower:
+                harm_score = 0.9
+                break
         threshold = self.threshold
         is_blocked = harm_score > threshold
         return {
