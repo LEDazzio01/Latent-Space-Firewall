@@ -60,7 +60,8 @@ if run_btn and user_prompt:
     with st.spinner("Harvesting Layer 6 Vectors..."):
         # Artificial sleep to make the UI feel "processing" (optional)
         time.sleep(0.5) 
-        result = engine.scan(user_prompt)
+        # Pass the model to the engine for activation extraction
+        result = engine.scan(user_prompt, model=model)
     
     score = result["harm_score"]
     threshold = result["threshold"]
