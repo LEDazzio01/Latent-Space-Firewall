@@ -9,7 +9,7 @@ import torch
 from typing import Dict, Optional
 from transformer_lens import HookedTransformer
 
-from . import config
+from latent_space_firewall.src import config
 
 class FirewallEngine:
     def __init__(self):
