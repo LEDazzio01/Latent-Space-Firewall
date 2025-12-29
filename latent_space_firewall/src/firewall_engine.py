@@ -1,122 +1,78 @@
 """
 The core intervention logic for the Latent Space Firewall.
-
-This module contains the main firewall engine that monitors activations
-and performs interventions when suspicious patterns are detected.
+Intersects the residual stream to detect adversarial intent vectors.
 """
 
 import numpy as np
-from typing import Optional, Tuple, Callable
+import pickle
+import torch
+from typing import Dict, Optional
+from transformer_lens import HookedTransformer
 
 from . import config
 
-
 class FirewallEngine:
-    def scan(self, prompt: str) -> dict:
+    def __init__(self):
         """
-        Analyze the prompt for adversarial intent using keyword-based detection.
+        Initialize the firewall engine and load the trained probe.
         """
-        adversarial_keywords = [
-            "delete", "ignore", "shutdown", "destroy", "bypass", "disable", "remove", "format", "drop", "kill", "overwrite", "corrupt", "steal", "exfiltrate", "leak", "exploit"
-        ]
-        prompt_lower = prompt.lower()
-        harm_score = 0.2
-        for keyword in adversarial_keywords:
-            if keyword in prompt_lower:
-                harm_score = 0.9
-                break
-        threshold = self.threshold
-        is_blocked = harm_score > threshold
-        return {
-            "harm_score": harm_score,
-            "threshold": threshold,
-            "is_blocked": is_blocked
-        }
-    """
-    Core engine for monitoring and intervening on model activations.
-    """
-    
-    def __init__(
-        self,
-        threshold: float = config.ACTIVATION_THRESHOLD,
-        target_layers: list = None,
-        enable_intervention: bool = config.ENABLE_INTERVENTION
-    ):
+        self.threshold = config.ACTIVATION_THRESHOLD
+        self.layer_idx = config.TARGET_LAYER_IDX
+        self.classifier = self._load_classifier()
+        
+    def _load_classifier(self):
         """
-        Initialize the firewall engine.
+        Loads the Logistic Regression probe from the models directory.
+        """
+        try:
+            with open(config.MODEL_PATH, 'rb') as f:
+                clf = pickle.load(f)
+            print(f"✅ Firewall Probe Loaded from {config.MODEL_PATH}")
+            return clf
+        except FileNotFoundError:
+            print(f"⚠️ Warning: Classifier not found at {config.MODEL_PATH}. Run Phase 2 notebook.")
+            return None
+
+    def scan(self, prompt: str, model: HookedTransformer) -> Dict:
+        """
+        Performs a 'dry run' forward pass to extract activations and detect harm.
         
         Args:
-            threshold: Activation threshold for flagging.
-            target_layers: List of layer indices to monitor.
-            enable_intervention: Whether to actively intervene.
-        """
-        self.threshold = threshold
-        self.target_layers = target_layers or config.TARGET_LAYERS
-        self.enable_intervention = enable_intervention
-        self.classifier = None  # Will be loaded in Phase 2
-        
-    def load_classifier(self, classifier_path: str) -> None:
-        """
-        Load a trained classifier for activation analysis.
-        
-        Args:
-            classifier_path: Path to the trained classifier.
-        """
-        # TODO: Implement classifier loading (Phase 2)
-        pass
-    
-    def analyze_activations(
-        self,
-        activations: np.ndarray
-    ) -> Tuple[bool, float]:
-        """
-        Analyze activations to determine if intervention is needed.
-        
-        Args:
-            activations: Numpy array of model activations.
+            prompt: The user input text.
+            model: The loaded HookedTransformer instance (passed from app.py).
             
         Returns:
-            Tuple of (should_intervene, confidence_score).
+            Dictionary containing the harm score and blocking decision.
         """
-        # TODO: Implement activation analysis (Phase 2)
-        return False, 0.0
-    
-    def intervene(
-        self,
-        activations: np.ndarray,
-        intervention_fn: Optional[Callable] = None
-    ) -> np.ndarray:
-        """
-        Apply intervention to the activations.
+        # 1. Extract the Latent Vector (Mechanistic Interpretability)
+        # We hook into the residual stream at the final token of the prompt.
+        hook_name = f"blocks.{self.layer_idx}.hook_resid_post"
         
-        Args:
-            activations: Original activations.
-            intervention_fn: Optional custom intervention function.
-            
-        Returns:
-            Modified activations.
-        """
-        if not self.enable_intervention:
-            return activations
-            
-        # TODO: Implement intervention logic (Phase 2)
-        return activations
-    
-    def create_hook(self, layer_idx: int) -> Callable:
-        """
-        Create a forward hook for monitoring a specific layer.
-        
-        Args:
-            layer_idx: Index of the layer to hook.
-            
-        Returns:
-            Hook function for the layer.
-        """
-        def hook(module, input, output):
-            should_intervene, confidence = self.analyze_activations(
-                output.detach().cpu().numpy()
+        # We use run_with_cache to surgically extract just the vector we need
+        with torch.no_grad():
+            _, cache = model.run_with_cache(
+                prompt, 
+                names_filter=lambda name: name == hook_name
             )
-            if should_intervene and confidence > config.CONFIDENCE_THRESHOLD:
-                return self.intervene(output)
-            return output
-        return hook
+            
+        # Shape: [batch, pos, d_model] -> Extract last token of first sequence
+        last_token_vector = cache[hook_name][0, -1, :].cpu().numpy()
+        
+        # 2. Project onto the Probe (The "Mind Reading" Step)
+        if self.classifier:
+            # Get the probability of class 1 (Harmful)
+            # Reshape to (1, -1) because sklearn expects a batch
+            harm_prob = self.classifier.predict_proba(last_token_vector.reshape(1, -1))[0, 1]
+        else:
+            # Fallback if model missing (fail-safe)
+            harm_prob = 0.0
+
+        # 3. Apply the Conformal Guarantee
+        is_blocked = harm_prob > self.threshold
+        
+        return {
+            "harm_score": float(harm_prob),
+            "threshold": self.threshold,
+            "is_blocked": bool(is_blocked),
+            "activation_vector": last_token_vector  # Optional: for visualization
+        }
