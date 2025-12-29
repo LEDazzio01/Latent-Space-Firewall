@@ -1,20 +1,20 @@
 """
 Global constants and configuration for the Latent Space Firewall.
 """
+import os
 
 # Model configuration
-MODEL_NAME = "gpt2"  # Default model for experiments
+MODEL_NAME = "gpt2-small"
+TARGET_LAYER_IDX = 6  # The layer we harvested from
 
-# Layer configuration
-TARGET_LAYERS = [6, 7, 8]  # Layers to monitor for activations
+# Threshold configuration (Calculated via Split Conformal Prediction)
+# guarantees 95% Recall on the calibration set.
+ACTIVATION_THRESHOLD = 0.0355 
+CONFIDENCE_THRESHOLD = 0.90 
 
-# Threshold configuration
-ACTIVATION_THRESHOLD = 0.5  # Threshold for flagging suspicious activations
-CONFIDENCE_THRESHOLD = 0.8  # Minimum confidence for intervention
-
-# Data paths
-RAW_DATA_DIR = "data/raw"
-PROCESSED_DATA_DIR = "data/processed"
+# Paths
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "firewall_classifier.pkl")
 
 # Intervention settings
-ENABLE_INTERVENTION = False  # Set to True to enable active blocking
+ENABLE_INTERVENTION = True
