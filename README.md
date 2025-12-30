@@ -29,7 +29,7 @@ Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate 
 | **Compute Savings** | ~40% | Generation aborted prior to decoding on blocked requests |
 
 ## 4. Architecture
-'''python 
+
 [User Prompt] -> [GPT-2 Transformer] 
                       |
                  (Layer 6 Hook) -> [Latent Vector]
