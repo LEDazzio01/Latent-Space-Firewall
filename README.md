@@ -39,7 +39,6 @@ Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate 
                                    [Conformal Check] 
                                         |
                           (Score > 0.0355 ?) -> [BLOCK / ALLOW]
-'''
 
 ### Prerequisites
 - Python 3.10 or newer (recommended: 3.12)
