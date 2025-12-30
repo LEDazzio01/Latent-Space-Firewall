@@ -29,7 +29,7 @@ Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate 
 | **Compute Savings** | ~40% | Generation aborted prior to decoding on blocked requests |
 
 ## 4. Architecture
-```python
+'''python 
 [User Prompt] -> [GPT-2 Transformer] 
                       |
                  (Layer 6 Hook) -> [Latent Vector]
@@ -39,7 +39,7 @@ Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate 
                                    [Conformal Check] 
                                         |
                           (Score > 0.0355 ?) -> [BLOCK / ALLOW]
-
+'''
 
 ### Prerequisites
 - Python 3.10 or newer (recommended: 3.12)
