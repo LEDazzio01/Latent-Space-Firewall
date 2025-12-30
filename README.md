@@ -41,7 +41,6 @@ graph TD
 
 ```
 ## 5. Usage
-## Complete Running Instructions
 
 ### Prerequisites
 - Python 3.10 or newer (recommended: 3.12)
