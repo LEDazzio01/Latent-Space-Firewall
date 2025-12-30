@@ -23,16 +23,17 @@ st.markdown("""
 """)
 
 # 2. LOAD MODEL (Cached resource to avoid reloading on every click)
+
 @st.cache_resource
 def load_system():
     with st.spinner("Loading Neural Weights & Firewall Rules..."):
         # We use CPU to be safe in Codespaces
         model = HookedTransformer.from_pretrained("gpt2-small", device="cpu")
         engine = FirewallEngine()
-    return engine
+    return engine, model
 
 try:
-    engine = load_system()
+    engine, model = load_system()
     st.success("✅ System Online: Split Conformal Guardrails Enforced")
 except Exception as e:
     st.error(f"System Offline: {e}")
