@@ -41,15 +41,50 @@ graph TD
 
 ```
 ## 5. Usage
-### Quickstart
+## Complete Running Instructions
 
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt
+### Prerequisites
+- Python 3.10 or newer (recommended: 3.12)
+- pip (Python package manager)
+- (Optional) virtualenv for isolated environments
 
-# 2. Run the Firewall Console
-streamlit run src/app.py
-```
+### Step-by-Step Setup
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/LEDazzio01/Latent-Space-Firewall.git
+    cd Latent-Space-Firewall
+    ```
+2. **(Recommended) Create and activate a virtual environment:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
+3. **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+4. **Run the data loader (if needed):**
+    ```bash
+    python -m latent_space_firewall.src.data_loader
+    ```
+    This will generate the calibration dataset in `latent_space_firewall/data/raw/`.
+5. **Harvest activations:**
+    Open and run all cells in `notebooks/01_activation_harvesting.ipynb` to extract activations from GPT-2 Small.
+
+6. **Train the probe and calibrate threshold:**
+    Open and run all cells in `notebooks/02_train_probe.ipynb` to train the classifier and compute the conformal threshold. This will save the model and update the config.
+
+7. **Launch the Streamlit Firewall Console:**
+    ```bash
+    streamlit run src/app.py
+    ```
+    The web UI will open in your browser. Enter prompts to test the firewall.
+
+### Troubleshooting
+- If you see `ModuleNotFoundError: No module named 'latent_space_firewall'`, ensure you are running Streamlit from the project root and that the sys.path fix is present in `app.py`.
+- If you encounter missing package errors, re-run `pip install -r requirements.txt`.
+- For GPU acceleration, modify the device argument in `app.py` and ensure PyTorch is installed with CUDA support.
+
 
 ### Telemetry Integration
 The system emits structured JSON logs compatible with Azure Sentinel schema for enterprise observability:
