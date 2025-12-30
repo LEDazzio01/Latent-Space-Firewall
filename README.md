@@ -75,7 +75,7 @@ graph TD
 
 7. **Launch the Streamlit Firewall Console:**
     ```bash
-    streamlit run src/app.py
+    python -m streamlit run latent_space_firewall/src/app.py
     ```
     The web UI will open in your browser. Enter prompts to test the firewall.
 
