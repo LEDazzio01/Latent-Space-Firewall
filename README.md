@@ -1,6 +1,4 @@
 
-## 7. Complete Running Instructions
-
 ### Prerequisites
 - Python 3.10 or newer (recommended: 3.12)
 - pip (Python package manager)
