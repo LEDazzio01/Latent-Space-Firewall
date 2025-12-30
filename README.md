@@ -99,8 +99,3 @@ The system emits structured JSON logs compatible with Azure Sentinel schema for 
 }
 ```
 
-## 6. Research Artifacts
-
-- notebooks/01_activation_harvesting.ipynb: Logic for extracting residual stream vectors.
-- notebooks/02_train_probe.ipynb: Implementation of Split Conformal Prediction and threshold calculation.
-- src/firewall_engine.py: Real-time intervention logic.
