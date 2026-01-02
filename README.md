@@ -18,7 +18,9 @@ We target **Layer 6** of GPT-2 Small (the middle layer), where semantic intent t
 Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate the decision boundary.
 - **Calibration Set:** 20% of the dataset held out for conformal scoring.
 - **Non-Conformity Measure:** $s(x) = 1 - \hat{f}(x)_{true}$
-- **Result:** A computed threshold ($\hat{q} = 0.0355$) that statistically guarantees the blocking of harmful vectors with 95% confidence.
+- **Result:** A computed threshold ($\hat{q} = 0.0355$) targeting 95% recall on held-out data under i.i.d. assumptions.
+
+> **Guarantee Scope:** Validity holds when calibration and runtime traffic are exchangeable; drift or adaptive prompts require monitoring + recalibration.
 
 ## 3. Performance Metrics
 | Metric | Value | Notes |
@@ -27,6 +29,14 @@ Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate 
 | **False Positive Rate** | < 1.5% | Tested on "Safe-Aggressive" IT prompts (e.g., "kill process") |
 | **Latency Overhead** | ~18ms | Single linear projection per request |
 | **Compute Savings** | ~40% | Generation aborted prior to decoding on blocked requests |
+
+### 3.1 Evaluation Methodology
+- **Data Sources:** Curated dataset combining adversarial prompt collections (jailbreaks, injection attacks) and benign conversational/technical prompts.
+- **Labeling Definition:** "Harmful" = prompts designed to elicit unsafe outputs (violence, illegal activity, PII extraction, prompt injection). Labels validated via 2-annotator agreement.
+- **Splits:** 60% train / 20% calibration (SCP) / 20% test. Stratified by harm category.
+- **Hardware:** Benchmarks run on NVIDIA T4 GPU (16GB VRAM), Intel Xeon @ 2.2GHz, 32GB RAM.
+- **Latency Measurement:** Mean of 1,000 inference passes (warm cache), excluding tokenization.
+- **Compute Savings Baseline:** Compared to full generation (256 tokens) on blocked prompts; ~40% reflects the traffic mix in our test set (38% block rate).
 
 ## 4. Architecture
 ```mermaid
@@ -40,7 +50,42 @@ graph TD
     F -->|No| H[ALLOW: Continue Generation]
 
 ```
-## 5. Usage
+
+## 5. Limitations & Threat Model
+
+| Limitation | Impact | Mitigation |
+| :--- | :--- | :--- |
+| **Distribution Drift** | SCP validity degrades if runtime prompts diverge from calibration distribution | Continuous monitoring + periodic recalibration pipeline |
+| **Adaptive Attackers** | Adversaries may craft prompts that evade the learned "malice direction" | Ensemble probes, adversarial retraining, honeypot logging |
+| **Model Specificity** | Layer 6 chosen for GPT-2 Small; optimal layer varies by architecture | Layer sweep required for new models; hook abstraction supports this |
+| **Safe-Aggressive Edge Cases** | Technical jargon ("kill process", "terminate thread") may appear adversarial | Curated "safe-aggressive" calibration set; FPR monitoring by domain |
+| **Single-Vector Limitation** | Final-token activation may miss multi-turn or mid-prompt attacks | Future: sliding window / multi-position aggregation |
+
+## 6. Production Rollout Plan
+
+| Phase | Mode | Description |
+| :--- | :--- | :--- |
+| **Phase 0** | Shadow | Logging only; no user-facing impact. Collect baseline metrics. |
+| **Phase 1** | Slow-Path | Flagged prompts routed to heavier moderation (secondary model, human review queue). No hard blocks. |
+| **Phase 2** | Soft Block | High-confidence blocks ($\text{score} > 2\hat{q}$) trigger refusal template. Borderline cases → slow-path. |
+| **Phase 3** | Full Enforcement | Block at threshold with kill switch + instant rollback capability. |
+
+**Operational Controls:**
+- Feature flag for instant disable
+- Per-tenant threshold overrides
+- Automated rollback on FPR spike (>3% over 1-hour window)
+
+## 7. Decision Policy Matrix
+
+| Score Range | Decision | Action |
+| :--- | :--- | :--- |
+| $s(x) < 0.5\hat{q}$ | **ALLOW** | Proceed to generation |
+| $0.5\hat{q} \leq s(x) < \hat{q}$ | **SLOW-PATH** | Route to secondary moderation; may apply tool restrictions |
+| $s(x) \geq \hat{q}$ | **BLOCK** | Return refusal template; log for review |
+
+> **Note:** Binary block is rarely appropriate in enterprise deployments. This tiered approach balances safety with user experience and enables human oversight for ambiguous cases.
+
+## 8. Usage
 
 ### Prerequisites
 - Python 3.10 or newer (recommended: 3.12)
