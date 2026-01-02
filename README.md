@@ -1,11 +1,11 @@
 # Latent Space Firewall: Inference-Time Intervention Layer
 
-**Status:** Active Prototype | **Coverage:** Layer 6 (GPT-2 Small) | **Safety Guarantee:** 95% Recall (Split Conformal)
+**Status:** Active Prototype | **Coverage:** Layer 6 (GPT-2 Small) | **Recall:** 95% (Calibrated via Split Conformal)
 
 ## 1. Abstract
 Traditional LLM safety relies on post-hoc text filters or RLHF alignment, both of which are computationally expensive and prone to "jailbreak" bypasses. The **Latent Space Firewall** introduces a mechanistic intervention layer that intercepts the model's residual stream during the forward pass.
 
-By extracting activation vectors from **Layer 6** and projecting them onto a "Malice Direction" identified via Logistic Regression, this system detects adversarial intent *before* token generation occurs. We apply **Split Conformal Prediction (SCP)** to the output scores to provide a mathematical guarantee of safety ($\alpha=0.05$), ensuring that 95% of harmful prompts are blocked regardless of model calibration errors.
+By extracting activation vectors from **Layer 6** and projecting them onto a "Malice Direction" identified via Logistic Regression, this system detects adversarial intent *before* token generation occurs. We apply **Split Conformal Prediction (SCP)** to the output scores, calibrated to **95% recall on held-out evaluation from the same distribution**, with monitoring + retraining hooks to manage drift and adaptive attacks.
 
 ## 2. Methodology
 
@@ -23,7 +23,7 @@ Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate 
 ## 3. Performance Metrics
 | Metric | Value | Notes |
 | :--- | :--- | :--- |
-| **Recall (Safety)** | **95.0%** | Guaranteed by SCP ($\alpha=0.05$) |
+| **Recall (Safety)** | **95.0%** | Calibrated on held-out eval set ($\alpha=0.05$) |
 | **False Positive Rate** | < 1.5% | Tested on "Safe-Aggressive" IT prompts (e.g., "kill process") |
 | **Latency Overhead** | ~18ms | Single linear projection per request |
 | **Compute Savings** | ~40% | Generation aborted prior to decoding on blocked requests |
