@@ -1,11 +1,11 @@
 # Latent Space Firewall: Inference-Time Intervention Layer
 
-**Status:** Active Prototype | **Coverage:** Layer 6 (GPT-2 Small) | **Recall:** 95% (Calibrated via Split Conformal)
+**Status:** Active Prototype | **Coverage:** Layer 6 (GPT-2 Small) | **Calibrated Target:** 95% harmful recall (split conformal, exchangeability assumed)
 
 ## 1. Abstract
 Traditional LLM safety relies on post-hoc text filters or RLHF alignment, both of which are computationally expensive and prone to "jailbreak" bypasses. The **Latent Space Firewall** introduces a mechanistic intervention layer that intercepts the model's residual stream during the forward pass.
 
-By extracting activation vectors from **Layer 6** and projecting them onto a "Malice Direction" identified via Logistic Regression, this system detects adversarial intent *before* token generation occurs. We apply **Split Conformal Prediction (SCP)** to the output scores, calibrated to **95% recall on held-out evaluation from the same distribution**, with monitoring + retraining hooks to manage drift and adaptive attacks.
+By extracting activation vectors from **Layer 6** and projecting them onto a "Malice Direction" identified via Logistic Regression, this system detects adversarial intent *before* token generation occurs. We use **Split Conformal Prediction (SCP)** to set a decision threshold with distribution-free validity under exchangeability assumptions; it does not rely on well-calibrated probabilities. Drift and adaptive prompts require monitoring and recalibration.
 
 ## 2. Methodology
 
@@ -18,14 +18,14 @@ We target **Layer 6** of GPT-2 Small (the middle layer), where semantic intent t
 Instead of arbitrary thresholds, we use Split Conformal Prediction to calibrate the decision boundary.
 - **Calibration Set:** 20% of the dataset held out for conformal scoring.
 - **Non-Conformity Measure:** $s(x) = 1 - \hat{f}(x)_{true}$
-- **Result:** A computed threshold ($\hat{q} = 0.0355$) targeting 95% recall on held-out data under i.i.d. assumptions.
+- **Result:** Under exchangeability, the calibrated threshold ($\hat{q} = 0.0355$) controls the harmful false-negative rate at ≤5% on future draws from the same distribution.
 
 > **Guarantee Scope:** Validity holds when calibration and runtime traffic are exchangeable; drift or adaptive prompts require monitoring + recalibration.
 
 ## 3. Performance Metrics
 | Metric | Value | Notes |
 | :--- | :--- | :--- |
-| **Recall (Safety)** | **95.0%** | Calibrated on held-out eval set ($\alpha=0.05$) |
+| **Recall (Safety)** | **95.0%** | Calibration target; observed on held-out eval |
 | **False Positive Rate** | < 1.5% | Tested on "Safe-Aggressive" IT prompts (e.g., "kill process") |
 | **Latency Overhead** | ~18ms | Single linear projection per request |
 | **Compute Savings** | ~40% | Generation aborted prior to decoding on blocked requests |
