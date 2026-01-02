@@ -51,7 +51,20 @@ graph TD
 
 ```
 
-## 5. Limitations & Threat Model
+## 5. Architecture Notes
+
+### Why GPT-2 Small?
+GPT-2 Small (124M parameters) serves as a **computational proxy** for demonstrating the latent space firewall methodology. The core insight—that adversarial intent is detectable in middle-layer activations—generalizes across transformer architectures. The `HookedTransformer` abstraction from TransformerLens allows this same pipeline to be applied to Llama-3, Mistral, or any supported model by simply changing the model config and re-running the layer sweep. GPT-2 Small enables rapid iteration, local development without GPU clusters, and pedagogical clarity.
+
+### Why Layer 6?
+Empirical layer sweeps consistently show that **middle layers** (approximately layers 4-8 in a 12-layer model) contain the most abstract "intent" representations:
+- **Earlier layers (0-3):** Focus on syntax, tokenization artifacts, and local n-gram patterns
+- **Middle layers (4-8):** Encode semantic intent, topic, and abstract reasoning direction
+- **Later layers (9-11):** Specialize in next-token prediction logits and output formatting
+
+Layer 6 sits at the geometric center of GPT-2 Small's residual stream, where the model has processed enough context to form intent but hasn't yet committed to specific output tokens. This makes it ideal for detecting adversarial steering before generation begins.
+
+## 6. Limitations & Threat Model
 
 | Limitation | Impact | Mitigation |
 | :--- | :--- | :--- |
@@ -61,7 +74,7 @@ graph TD
 | **Safe-Aggressive Edge Cases** | Technical jargon ("kill process", "terminate thread") may appear adversarial | Curated "safe-aggressive" calibration set; FPR monitoring by domain |
 | **Single-Vector Limitation** | Final-token activation may miss multi-turn or mid-prompt attacks | Future: sliding window / multi-position aggregation |
 
-## 6. Production Rollout Plan
+## 7. Production Rollout Plan
 
 | Phase | Mode | Description |
 | :--- | :--- | :--- |
@@ -75,7 +88,7 @@ graph TD
 - Per-tenant threshold overrides
 - Automated rollback on FPR spike (>3% over 1-hour window)
 
-## 7. Decision Policy Matrix
+## 8. Decision Policy Matrix
 
 | Score Range | Decision | Action |
 | :--- | :--- | :--- |
@@ -85,7 +98,7 @@ graph TD
 
 > **Note:** Binary block is rarely appropriate in enterprise deployments. This tiered approach balances safety with user experience and enables human oversight for ambiguous cases.
 
-## 8. Usage
+## 9. Usage
 
 ### Prerequisites
 - Python 3.10 or newer (recommended: 3.12)

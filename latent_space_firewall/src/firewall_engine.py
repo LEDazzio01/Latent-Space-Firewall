@@ -3,6 +3,7 @@ The core intervention logic for the Latent Space Firewall.
 Intersects the residual stream to detect adversarial intent vectors.
 """
 
+import json
 import numpy as np
 import pickle
 import torch
@@ -15,10 +16,27 @@ class FirewallEngine:
     def __init__(self):
         """
         Initialize the firewall engine and load the trained probe.
+        The threshold is loaded dynamically from meta.json (saved during training)
+        to ensure inference always uses the exact threshold from the training run.
         """
-        self.threshold = config.ACTIVATION_THRESHOLD
         self.layer_idx = config.TARGET_LAYER_IDX
         self.classifier = self._load_classifier()
+        self.threshold = self._load_threshold()
+        
+    def _load_threshold(self) -> float:
+        """
+        Loads the conformal threshold from meta.json.
+        Falls back to config if meta.json is missing (legacy support).
+        """
+        try:
+            with open(config.META_PATH, 'r') as f:
+                meta = json.load(f)
+            threshold = meta.get('threshold', config.ACTIVATION_THRESHOLD_FALLBACK)
+            print(f"✅ Threshold loaded from meta.json: {threshold:.4f}")
+            return threshold
+        except FileNotFoundError:
+            print(f"⚠️ meta.json not found. Using fallback threshold: {config.ACTIVATION_THRESHOLD_FALLBACK}")
+            return config.ACTIVATION_THRESHOLD_FALLBACK
         
     def _load_classifier(self):
         """
@@ -48,7 +66,11 @@ class FirewallEngine:
         # We hook into the residual stream at the final token of the prompt.
         hook_name = f"blocks.{self.layer_idx}.hook_resid_post"
         
-        # We use run_with_cache to surgically extract just the vector we need
+        # We use run_with_cache to surgically extract just the vector we need.
+        # NOTE (Production): For C++/ONNX deployment, replace this with a forward
+        # pre-hook that extracts only the target tensor and short-circuits the
+        # remaining computation. This saves ~40% VRAM by dropping layers 7-11
+        # when blocking, since generation never occurs.
         with torch.no_grad():
             _, cache = model.run_with_cache(
                 prompt, 
